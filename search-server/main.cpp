@@ -7,6 +7,7 @@
 #include <map>
 #include <cmath>
 #include <tuple>
+#include <numeric>
 
 unsigned MAX_RESULT_DOCUMENT_COUNT = 5;
 const double EPSILON = 1e-6;
@@ -48,9 +49,9 @@ public:
 	}
 
 	template <typename Predicat>
-	std::vector<Document> FindTopDocuments(const std::string& raw_query, Predicat status)const {
+	std::vector<Document> FindTopDocuments(const std::string& raw_query, Predicat filter)const {
 		 const std::set<std::string> query_words = ParseQuery(raw_query, stop_words);
-		 std::vector<Document> allDoc = FindAllDocuments(query_words, status);
+		 std::vector<Document> allDoc = FindAllDocuments(query_words, filter);
 		 sort(allDoc.begin(), allDoc.end(), [](const Document& lhs, const Document& rhs) {
 			 if(std::abs(lhs.relevance - rhs.relevance) < EPSILON){
 				 return lhs.rating > rhs.rating;
@@ -104,13 +105,7 @@ private:
 	std::map<int, DocumentStatus> documentStatus;
 
 	static int ComputeAverageRating(const std::vector<int>& ratings) {
-		int ratingSumm = 0;
-		for(const int& value: ratings){
-			ratingSumm += value;
-		}
-		//static_cast позволяет привести значение к типу int
-		//без использования дополнительной переменной
-		return ratingSumm / static_cast<int>(ratings.size());
+		return std::accumulate(ratings.begin(), ratings.end(), 0) / static_cast<int>(ratings.size());
 	}
 
 	std::vector<std::string> SplitIntoWordsNoStop(const std::string& text, const std::set<std::string>& stop_words) const {
@@ -144,7 +139,7 @@ private:
 	}
 
 	template <typename Predicat>
-	std::vector<Document> FindAllDocuments(const std::set<std::string>& query_words, Predicat status) const{
+	std::vector<Document> FindAllDocuments(const std::set<std::string>& query_words, Predicat filter) const{
 		std::vector<Document> matched_documents;
 		std::map<int, double> documentToRelevance;
 		for(const std::string& word: query_words){
@@ -155,7 +150,7 @@ private:
 			if(documents.find(word) != documents.end()){
 				double idf = log(documentsCount * 1.0 /  documents.at(word).size());
 				for(const auto& [documentId, documentTf] : documents.at(word)){
-					if(status(documentId, documentStatus.at(documentId), documentsRating.at(documentId))){
+					if(filter(documentId, documentStatus.at(documentId), documentsRating.at(documentId))){
 						double td_idf = idf * documentTf;
 						documentToRelevance[documentId] += td_idf;
 					}

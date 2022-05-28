@@ -286,7 +286,7 @@ void AddDocument(SearchServer& search_server, int document_id, const std::string
     try {
         search_server.AddDocument(document_id, document, status, ratings);
     } catch (const std::exception& e) {
-        std::cout << "Ошибка добавления документа "s << document_id << ": "s << e.what() << std::endl;
+        std::cerr << "Ошибка добавления документа "s << document_id << ": "s << e.what() << std::endl;
     }
 }
 
@@ -297,7 +297,7 @@ void FindTopDocuments(const SearchServer& search_server, const std::string& raw_
             PrintDocument(document);
         }
     } catch (const std::exception& e) {
-    	std::cout << "Ошибка поиска: "s << e.what() << std::endl;
+    	std::cerr << "Ошибка поиска: "s << e.what() << std::endl;
     }
 }
 
@@ -311,32 +311,23 @@ void MatchDocuments(const SearchServer& search_server, const std::string& query)
             PrintMatchDocumentResult(document_id, words, status);
         }
     } catch (const std::exception& e) {
-    	std::cout << "Ошибка матчинга документов на запрос "s << query << ": "s << e.what() << std::endl;
+    	std::cerr << "Ошибка матчинга документов на запрос "s << query << ": "s << e.what() << std::endl;
     }
 }
 
-void test(){
-
-}
-
-
-
 int main() {
-    SearchServer search_server("и в на"s);
-
-    AddDocument(search_server, 1, "пушистый кот пушистый хвост"s, DocumentStatus::ACTUAL, {7, 2, 7});
-    AddDocument(search_server, 1, "пушистый пёс и модный ошейник"s, DocumentStatus::ACTUAL, {1, 2});
-    AddDocument(search_server, -1, "пушистый пёс и модный ошейник"s, DocumentStatus::ACTUAL, {1, 2});
-    AddDocument(search_server, 3, "большой пёс скво\x12рец евгений"s, DocumentStatus::ACTUAL, {1, 3, 2});
-    AddDocument(search_server, 4, "большой пёс скворец евгений"s, DocumentStatus::ACTUAL, {1, 1, 1});
-
-    FindTopDocuments(search_server, "пушистый -пёс"s);
-    FindTopDocuments(search_server, "пушистый --кот"s);
-    FindTopDocuments(search_server, "пушистый -"s);
-
-    MatchDocuments(search_server, "пушистый пёс"s);
-    MatchDocuments(search_server, "модный -кот"s);
-    MatchDocuments(search_server, "модный --пёс"s);
-    MatchDocuments(search_server, "пушистый - хвост"s);
+		const std::string stopWords = "greater why not near without sure most had mr still never greatest be she"s;
+		SearchServer server(stopWords);
+		AddDocument(server, 0, "highly respect inquietude finished had greater none speaking", DocumentStatus::ACTUAL, {1, 5, 8});
+		AddDocument(server, 1, "having regret round kept remainder myself why not weather wished he made taste soon assistance eyes near", DocumentStatus::ACTUAL, {2, 3, 9});
+		AddDocument(server, 3, "without inquietude invited never ladies relation reasonable secure humoured", DocumentStatus::ACTUAL, {1, 2});
+		AddDocument(server, -4, "smiling sure furnished purse had most offered adapted called correct does domestic", DocumentStatus::BANNED, {5});
+		AddDocument(server, 3, "excellence mr still alteration depending never seven first greatest three park", DocumentStatus::REMOVED, {4, 5, 7, 9});
+		FindTopDocuments(server, "inquietude weather");
+		FindTopDocuments(server, "excellence inquietude weather -");
+		MatchDocuments(server, "inquietude weather");
+		MatchDocuments(server, "inquietude --weather");
+		return 0;
 }
+
 

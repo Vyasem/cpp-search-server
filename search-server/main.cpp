@@ -48,9 +48,9 @@ public:
 	}
 
 	void AddDocument(int document_id, const std::string& document, DocumentStatus status, const std::vector<int>& docRating) {
-		checkDocument(document, document_id);
-		documentsIds.push_back(document_id);
+		checkDocumentId(document_id);
 		const std::vector<std::string> words = SplitIntoWordsNoStop(document, stop_words);
+		documentsIds.push_back(document_id);
 		int size = words.size();
 		double tf = 1.0 / size;
 		for(const std::string& word: words){
@@ -64,7 +64,7 @@ public:
 
 	template <typename Predicat>
 	std::vector<Document> FindTopDocuments(const std::string& raw_query, Predicat filter)const {
-		const std::set<std::string> query_words = ParseQuery(raw_query, stop_words);
+		const Query query_words = ParseQuery(raw_query);
 		std::vector<Document> allDoc = FindAllDocuments(query_words, filter);
 		sort(allDoc.begin(), allDoc.end(), [](const Document& lhs, const Document& rhs) {
 			if(std::abs(lhs.relevance - rhs.relevance) < EPSILON){
@@ -89,23 +89,23 @@ public:
 	}
 
 	std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id) const{
-		std::set<std::string> query_words = ParseQuery(raw_query, stop_words);
+		Query query_words = ParseQuery(raw_query);
 		std::vector<std::string> findWords;
 		DocumentStatus status = documentStatus.at(document_id);
 		std::tuple<std::vector<std::string>, DocumentStatus> result;
-		for(const std::string& word: query_words){
-			if(word[0] == '-'){
-				std::string newWord = word.substr(1);
-				if(documents.count(newWord) && documents.at(newWord).count(document_id)){
-					result = {findWords, status};
-					return result;
-				}
+		for(const std::string& word: query_words.minus_words){
+			if(documents.count(word) && documents.at(word).count(document_id)){
+				result = {findWords, status};
+				return result;
 			}
+		}
 
+		for(const std::string& word: query_words.plus_words){
 			if(documents.count(word) && documents.at(word).count(document_id)){
 				findWords.push_back(word);
 			}
 		}
+
 		result = {findWords, status};
 		return result;
 	}
@@ -144,20 +144,13 @@ private:
 		return true;
 	}
 
-	void checkDocument(const std::string& document, int document_id)const{
-		unsigned size = document.size();
+	void checkDocumentId(int document_id)const{
 		if(documentStatus.count(document_id)){
 			throw std::invalid_argument("document id alredy exist");
 		}
-		for(unsigned i = 0; i < size; ++i){
-			int code = int(document[i]);
-			if((code >= 0 && code < 32)){
-				throw std::invalid_argument("document contains wrong symbol");
-			}
 
-			if(document_id < 0){
-				throw std::invalid_argument("document id less that 0");
-			}
+		if(document_id < 0){
+			throw std::invalid_argument("document id less that 0");
 		}
 	}
 
@@ -171,6 +164,9 @@ private:
 	std::vector<std::string> SplitIntoWordsNoStop(const std::string& text, const std::set<std::string>& stop_words) const {
 		std::vector<std::string> words;
 		for (const std::string& word : SplitIntoWords(text)) {
+			if(!checkWord(word)){
+				throw std::invalid_argument("document contains wrong symbol");
+			}
 			if (stop_words.count(word) == 0) {
 				words.push_back(word);
 			}
@@ -197,15 +193,65 @@ private:
 		return words;
 	}
 
+	bool IsStopWord(const std::string& word) const{
+		return stop_words.count(word);
+	}
+
+	struct Query {
+		std::set<std::string> plus_words;
+		std::set<std::string> minus_words;
+	};
+
+	Query ParseQuery(const std::string& text) const{
+		Query query;
+		for (const std::string& word : SplitIntoWords(text)) {
+			const QueryWord queryWord = ParseQueryWord(word);
+			if(!queryWord.is_stop){
+				if(queryWord.is_minus){
+					query.minus_words.insert(queryWord.data);
+				}else{
+					query.plus_words.insert(queryWord.data);
+				}
+			}
+		}
+		return query;
+	}
+
+	struct QueryWord {
+		std::string data;
+		bool is_minus;
+		bool is_stop;
+	};
+
+	QueryWord ParseQueryWord(std::string word) const{
+		bool is_minus =  false;
+		if(!checkWord(word)){
+			throw std::invalid_argument("query word contains a wrong character");
+		}
+
+		unsigned size = word.size();
+
+		if(word[0] == '-' && (size == 1 || word[1] == '-' || word[1] == ' ')){
+			throw std::invalid_argument("query word contains extra -");
+		}
+
+		if(word[0] == '-'){
+			is_minus = true;
+			word = word.substr(1);
+		}
+
+		return {
+			word,
+			is_minus,
+			IsStopWord(word)
+		};
+	}
+
 	template <typename Predicat>
-	std::vector<Document> FindAllDocuments(const std::set<std::string>& query_words, Predicat filter) const{
+	std::vector<Document> FindAllDocuments(const Query& query_words, Predicat filter) const{
 		std::vector<Document> matched_documents;
 		std::map<int, double> documentToRelevance;
-		for(const std::string& word: query_words){
-			if(word[0] == '-'){
-				continue;
-			}
-
+		for(const std::string& word: query_words.plus_words){
 			if(documents.find(word) != documents.end()){
 				double idf = log(documentsCount * 1.0 /  documents.at(word).size());
 				for(const auto& [documentId, documentTf] : documents.at(word)){
@@ -218,15 +264,9 @@ private:
 			}
 		}
 
-		for(const std::string& word: query_words){
-			if(word[0] != '-'){
-				continue;
-			}
-
-			std::string newWord = word.substr(1);
-
-			if(documents.find(newWord) != documents.end()){
-				for(const auto& [documentId, documentTf]: documents.at(newWord)){
+		for(const std::string& word: query_words.minus_words){
+			if(documents.find(word) != documents.end()){
+				for(const auto& [documentId, documentTf]: documents.at(word)){
 					documentToRelevance.erase(documentId);
 				}
 			}
@@ -237,27 +277,6 @@ private:
 		}
 
 		return matched_documents;
-	}
-
-	void ParseQueryWord(const std::string& word) const{
-		if(!checkWord(word)){
-			throw std::invalid_argument("query word contains a wrong character");
-		}
-
-		unsigned size = word.size();
-
-		if(word[0] == '-' && (size == 1 || word[1] == '-' || word[1] == ' ')){
-			throw std::invalid_argument("query word contains extra -");
-		}
-	}
-
-	std::set<std::string> ParseQuery(const std::string& text, const std::set<std::string>& stop_words) const{
-		std::set<std::string> query_words;
-		for (const std::string& word : SplitIntoWordsNoStop(text, stop_words)) {
-			ParseQueryWord(word);
-			query_words.insert(word);
-		}
-		return query_words;
 	}
 };
 
@@ -278,6 +297,7 @@ void AddDocument(SearchServer& search_server, int document_id, const std::string
 		search_server.AddDocument(document_id, document, status, ratings);
 	} catch (const std::exception& e) {
 		std::cerr << "Ошибка добавления документа "s << document_id << ": "s << e.what() << std::endl;
+		abort();
 	}
 }
 
@@ -289,6 +309,7 @@ void FindTopDocuments(const SearchServer& search_server, const std::string& raw_
 		}
 	} catch (const std::exception& e) {
 		std::cerr << "Ошибка поиска: "s << e.what() << std::endl;
+		abort();
 	}
 }
 
@@ -303,6 +324,7 @@ void MatchDocuments(const SearchServer& search_server, const std::string& query)
 		}
 	} catch (const std::exception& e) {
 		std::cerr << "Ошибка матчинга документов на запрос "s << query << ": "s << e.what() << std::endl;
+		abort();
 	}
 }
 
@@ -315,7 +337,7 @@ int main() {
 	AddDocument(server, 1, "having regret round kept remainder myself why not weather wished he made taste soon assistance eyes near", DocumentStatus::ACTUAL, {2, 3, 9});
 	AddDocument(server, 2, "without inquietude invited never ladies relation reasonable secure humoured", DocumentStatus::ACTUAL, {1, 2});
 	AddDocument(server, 3, "smiling sure furnished purse had most offered adapted called correct does domestic", DocumentStatus::BANNED, {5});
-	AddDocument(server, -4, "excellence mr still alteration depending never seven first greatest three park", DocumentStatus::REMOVED, {4, 5, 7, 9});
+	AddDocument(server, 3, "excellence mr still alteration depending never seven first greatest three park", DocumentStatus::REMOVED, {4, 5, 7, 9});
 	FindTopDocuments(server, "inquietude weather");
 	FindTopDocuments(server, "excellence inquietude weather");
 	MatchDocuments(server, "inquietude weather furnished");

@@ -114,11 +114,6 @@ public:
 	}
 
 	int GetDocumentId(int index)const{
-		int documents = GetDocumentCount();
-		if(index < 0 || index >= documents){
-			throw std::out_of_range("index out of range");
-		}
-
 		return documentsIds.at(index);
 	}
 private:

@@ -14,11 +14,8 @@
 class SearchServer{
 public:
 	inline static constexpr int INVALID_DOCUMENT_ID = -1;
-
 	SearchServer();
-
 	SearchServer(const std::string& stopWords);
-
 	template<typename Container>
 	SearchServer(const Container& stopWords);
 	void AddDocument(int document_id, const std::string& document, DocumentStatus status, const std::vector<int>& docRating);

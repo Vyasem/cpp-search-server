@@ -20,14 +20,7 @@ public:
 	SearchServer(const std::string& stopWords);
 
 	template<typename Container>
-	SearchServer(const Container& stopWords){
-		for (const std::string& word : stopWords){
-			if(!checkWord(word)){
-				throw std::invalid_argument("stop word contains a wrong character");
-			}
-			stop_words.insert(word);
-		}
-	}
+	SearchServer(const Container& stopWords);
 	void AddDocument(int document_id, const std::string& document, DocumentStatus status, const std::vector<int>& docRating);
 	template <typename Predicat>
 	std::vector<Document> FindTopDocuments(const std::string& raw_query, Predicat filter)const;
@@ -61,6 +54,16 @@ private:
 	template <typename Predicat>
 	std::vector<Document> FindAllDocuments(const Query& query_words, Predicat filter)const;
 };
+
+template<typename Container>
+SearchServer::SearchServer(const Container& stopWords){
+	for (const std::string& word : stopWords){
+		if(!checkWord(word)){
+			throw std::invalid_argument("stop word contains a wrong character");
+		}
+		stop_words.insert(word);
+	}
+}
 
 template <typename Predicat>
 std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_query, Predicat filter)const{

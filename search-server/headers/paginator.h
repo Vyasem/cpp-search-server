@@ -1,5 +1,6 @@
 #pragma once
-#include<vector>
+#include <iostream>
+#include <vector>
 #include <iterator>
 
 template <typename Iterator>
@@ -29,10 +30,18 @@ private:
 };
 
 template <typename Iterator>
+std::ostream& operator<<(std::ostream& os, IteratorRange<Iterator> range){
+	for(auto it = range.begin(); it != range.end(); ++it){
+		os << *it;
+	}
+	return os;
+}
+
+template <typename Iterator>
 class Paginator{
 public:
 	Paginator(Iterator begin, Iterator end, std::size_t pageCount){
-		std::size_t size = std::distance(begin,end);
+		std::size_t size = std::distance(begin, end);
 		std::size_t pages = (size % pageCount == 0) ? size / pageCount : size / pageCount + 1;
 		Iterator pageIt = begin;
 		for(unsigned i = 0; i < pages; i++){

@@ -1,23 +1,22 @@
-#include <iostream>
-#include <string>
-#include <stdexcept>
-#include <iterator>
-#include "headers/document.h"
-#include "headers/paginator.h"
+#include "headers/string_processing.h"
 
-void PrintDocument(const Document& document){
-	std::cout << "{ document_id = " << document.id << ", relevance = " << document.relevance << ", rating = " << document.rating << " }" << std::endl;
-}
-
-void PrintMatchDocumentResult(int document_id, const std::vector<std::string>& words, DocumentStatus status) {
-	std::cout << "{ document_id = " << document_id << ", status = " << static_cast<int>(status) << ", words =";
-	for(const std::string& word: words){
-		std::cout << ' ' << word;
+std::vector<std::string> SplitIntoWords(const std::string& text){
+	std::vector<std::string> words;
+	std::string word;
+	for (const char c : text) {
+		if (c == ' ') {
+			if (!word.empty()) {
+				words.push_back(word);
+				word.clear();
+			}
+		} else {
+			word += c;
+		}
 	}
-	std::cout << "}" << std::endl;
+	if (!word.empty()) {
+		words.push_back(word);
+	}
+	return words;
 }
 
-std::ostream& operator<<(std::ostream& os, const Document& document){
-	os << "{ document_id = " << document.id << ", relevance = " << document.relevance << ", rating = " << document.rating << " }";
-	return os;
-}
+

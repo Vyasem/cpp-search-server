@@ -1,13 +1,4 @@
-#include<vector>
-#include <string>
-#include <set>
-#include <tuple>
-#include <numeric>
-#include <map>
-#include <cmath>
-#include <stdexcept>
-#include <algorithm>
-
+#include "headers/string_processing.h"
 #include "headers/search_server.h"
 
 SearchServer::SearchServer(){}
@@ -79,6 +70,13 @@ bool SearchServer::checkWord(const std::string& word)const{
 	return true;
 }
 
+int SearchServer::ComputeAverageRating(const std::vector<int>& ratings){
+	if(ratings.size() == 0){
+		return 0;
+	}
+	return std::accumulate(ratings.begin(), ratings.end(), 0) / static_cast<int>(ratings.size());
+}
+
 void SearchServer::checkDocumentId(int document_id)const{
 	if(documentStatus.count(document_id)){
 		throw std::invalid_argument("document id alredy exist");
@@ -98,25 +96,6 @@ std::vector<std::string> SearchServer::SplitIntoWordsNoStop(const std::string& t
 		if (stop_words.count(word) == 0){
 			words.push_back(word);
 		}
-	}
-	return words;
-}
-
-std::vector<std::string> SearchServer::SplitIntoWords(const std::string& text)const{
-	std::vector<std::string> words;
-	std::string word;
-	for (const char c : text) {
-		if (c == ' ') {
-			if (!word.empty()) {
-				words.push_back(word);
-				word.clear();
-			}
-		} else {
-			word += c;
-		}
-	}
-	if (!word.empty()) {
-		words.push_back(word);
 	}
 	return words;
 }

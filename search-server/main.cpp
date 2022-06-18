@@ -8,7 +8,7 @@
 
 
 void PrintDocument(const Document& document){
-	std::cout << "{ document_id = " << document.id << ", relevance = " << document.relevance << ", rating = " << document.rating << " }" << std::endl;
+	std::cout << document << std::endl;
 }
 
 void PrintMatchDocumentResult(int document_id, const std::vector<std::string>& words, DocumentStatus status) {

@@ -1,5 +1,5 @@
 #pragma once
-#include <iostream>
+#include <iostream> // а как же cin?
 #include <string>
 
 std::string ReadLine();

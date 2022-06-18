@@ -11,6 +11,9 @@
 
 #include "document.h"
 
+const unsigned MAX_RESULT_DOCUMENT_COUNT = 5;
+const double EPSILON = 1e-6;
+
 class SearchServer{
 public:
 	inline static constexpr int INVALID_DOCUMENT_ID = -1;

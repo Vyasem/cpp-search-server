@@ -11,10 +11,17 @@ void SearchServer::AddDocument(int document_id, const std::string& document, Doc
 	documentsIds.push_back(document_id);
 	int size = words.size();
 	double tf = 1.0 / size;
+	int stringHash = 0;
+	std::set<std::string> unicueWords;
 	for(const std::string& word: words){
 		tf += documents[word][document_id];
 		documents[word][document_id] = tf;
+		unicueWords.insert(word);
 	}
+	for(const std::string uWord: unicueWords){
+		stringHash += (std::hash<std::string>{}(uWord) % 65537);
+	}
+	documentsHash[document_id] = stringHash;
 	documentsRating[document_id] = ComputeAverageRating(docRating);
 	documentStatus[document_id] = status;
 }
@@ -55,11 +62,35 @@ unsigned SearchServer::GetDocumentCount()const{
 	return documentsIds.size();
 }
 
-int SearchServer::GetDocumentId(int index)const{
-	return documentsIds.at(index);
+std::vector<int>::const_iterator SearchServer::begin()const{
+	return documentsIds.begin();
+};
+
+std::vector<int>::const_iterator SearchServer::end()const{
+	return documentsIds.end();
+};
+const std::map<std::string, double>& SearchServer::GetWordFrequencies(int document_id)const{
+	static std::map<std::string, double> wordFreq;
+	for(const auto& [word, document]: documents){
+		if(document.count(document_id)){
+			wordFreq[word] = document.at(document_id);
+		}
+	}
+	return wordFreq;
+};
+void SearchServer::RemoveDocument(int document_id){
+	for(auto& [word, document]: documents){
+		if(document.count(document_id)){
+			document.erase(document_id);
+		}
+	}
+	for(auto it = begin(); it != end(); ++it){
+		if(*it == document_id){
+			documentsIds.erase(it);
+			break;
+		}
+	}
 }
-
-
 bool SearchServer::checkWord(const std::string& word)const{
 	for(const char ch: word){
 		int code = int(ch);

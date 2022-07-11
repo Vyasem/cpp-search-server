@@ -1,13 +1,15 @@
 #pragma once
-#include<vector>
+#include <vector>
 #include <string>
 #include <set>
 #include <tuple>
 #include <numeric>
 #include <map>
-#include <cmath> //используется для работы функции log
+#include <cmath>
 #include <stdexcept>
 #include <algorithm>
+#include <iterator>
+#include <functional>
 
 #include "document.h"
 
@@ -17,6 +19,7 @@ const double EPSILON = 1e-6;
 class SearchServer{
 public:
 	inline static constexpr int INVALID_DOCUMENT_ID = -1;
+	std::map<int, int> documentsHash;
 	SearchServer();
 	SearchServer(const std::string& stopWords);
 	template<typename Container>
@@ -27,8 +30,11 @@ public:
 	std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentStatus status)const;
 	std::vector<Document> FindTopDocuments(const std::string& raw_query)const;
 	std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id)const;
+	std::vector<int>::const_iterator begin()const;
+	std::vector<int>::const_iterator end()const;
 	unsigned GetDocumentCount()const;
-	int GetDocumentId(int index)const;
+	const std::map<std::string, double>& GetWordFrequencies(int document_id)const;
+	void RemoveDocument(int document_id);
 private:
 	std::vector<int> documentsIds;
 	std::map<std::string, std::map<int, double>> documents;

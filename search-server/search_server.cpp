@@ -11,14 +11,16 @@ void SearchServer::AddDocument(int document_id, const std::string& document, Doc
 	documentsIds.push_back(document_id);
 	int size = words.size();
 	double tf = 1.0 / size;
-	int stringHash = 0;
-	std::set<std::string> unicueWords;
+
+	std::set<std::string> uniqueWords;
 	for(const std::string& word: words){
 		tf += documents[word][document_id];
 		documents[word][document_id] = tf;
-		unicueWords.insert(word);
+		uniqueWords.insert(word);
 	}
-	for(const std::string uWord: unicueWords){
+
+	int stringHash = 0;
+	for(const std::string uWord: uniqueWords){
 		stringHash += (std::hash<std::string>{}(uWord) % 65537);
 	}
 	documentsHash[document_id] = stringHash;

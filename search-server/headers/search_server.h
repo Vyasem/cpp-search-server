@@ -19,6 +19,7 @@ const double EPSILON = 1e-6;
 class SearchServer{
 public:
 	inline static constexpr int INVALID_DOCUMENT_ID = -1;
+	//Контейнер который хранит хэши уникальных слов документа
 	std::map<int, int> documentsHash;
 	SearchServer();
 	SearchServer(const std::string& stopWords);

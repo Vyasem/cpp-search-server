@@ -58,37 +58,6 @@ void MatchDocuments(const SearchServer& search_server, const std::string& query)
 	}
 }
 
-int mainOld(){
-	using namespace std::string_literals;
-	//const std::string stopWords = "greater why not near without sure most had mr still never greatest be she"s;
-	//const std::set<std::string> stopWords{"greater"s, "why"s, "not"s, "near"s, "without"s, "sure"s, "most"s, "had"s, "mr"s, "still"s, "never"s, "greatest"s, "be"s, "she"s};
-	const std::vector<std::string> stopWords{"greater"s, "why"s, "not"s, "near"s, "without"s, "sure"s, "most"s, "had"s, "mr"s, "still"s, "never"s, "greatest"s, "be"s, "she"s};
-	SearchServer server(stopWords);
-	RequestQueue request_queue(server);
-	AddDocument(server, 0, "highly respect inquietude finished had greater none speaking", DocumentStatus::ACTUAL, {1, 5, 8});
-	AddDocument(server, 1, "having regret round kept remainder myself why not weather wished he made taste soon assistance eyes near", DocumentStatus::ACTUAL, {2, 3, 9});
-	AddDocument(server, 8, "without inquietude invited never ladies relation reasonable secure humoured", DocumentStatus::ACTUAL, {1, 2});
-	AddDocument(server, 3, "smiling sure furnished purse had most offered adapted called correct does domestic", DocumentStatus::BANNED, {5});
-	AddDocument(server, 7, "excellence mr still alteration depending never seven first greatest three park", DocumentStatus::REMOVED, {4, 5, 7, 9});
-	LOG_DURATION_STREAM("Operation time", std::cout);
-	FindTopDocuments(server, "inquietude weather still myself");
-	//const auto search_results = server.FindTopDocuments("inquietude weather still myself");
-	const auto search_results = request_queue.AddFindRequest("inquietude weather still myself");
-	int page_size = 2;
-	const auto pages = Paginate(search_results, page_size);
-	for(auto page = pages.begin(); page != pages.end(); ++page){
-		std::cout << *page << std::endl;
-		std::cout << "Page break"s << std::endl;
-	}
-	LOG_DURATION_STREAM("Operation time", std::cout);
-	FindTopDocuments(server, "excellence inquietude weather");
-	LOG_DURATION_STREAM("Operation time", std::cout);
-	MatchDocuments(server, "inquietude weather furnished");
-	LOG_DURATION_STREAM("Operation time", std::cout);
-	MatchDocuments(server, "inquietude weather still");
-	return 0;
-}
-
 int main(){
 	std::string stopWords = "and with";
 	SearchServer search_server(stopWords);
@@ -120,19 +89,6 @@ int main(){
 	std::cout << "Before duplicates removed: "s << search_server.GetDocumentCount() << std::endl;
 	RemoveDuplicates(search_server);
 	std::cout << "After duplicates removed: "s << search_server.GetDocumentCount() << std::endl;
-	/*for(auto i = search_server.documentsHash.begin(); i != search_server.documentsHash.end(); ++i){
-		for(auto j = search_server.documentsHash.begin(); j != search_server.documentsHash.end(); ++j){
-			auto iSecond = i->second;
-			auto jSecond = j->second;
-			auto iFirst = i->first;
-			auto jFirst = j->first;
-			if(iSecond == jSecond && iFirst != jFirst){
-				std::cout << iFirst << ": " << iSecond << " = " << jFirst << ": " << jSecond << std::endl;
-			}
-		}
-		std::cout << i->first << ": " << i->second  << std::endl;
-
-	}*/
 	return 0;
 }
 

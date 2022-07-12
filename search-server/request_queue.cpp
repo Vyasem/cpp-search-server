@@ -5,19 +5,19 @@
 #include "headers/request_queue.h"
 
 
-RequestQueue::RequestQueue(const SearchServer& search_server):search(search_server){
+RequestQueue::RequestQueue(const SearchServer& searchServer):search(searchServer){
 	no_results_requests_ = 0;
 	current_time_ = 0;
 }
 
-std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query, DocumentStatus status) {
-	return AddFindRequest(raw_query, [status](int document_id, DocumentStatus documentStatus, int rating){
+std::vector<Document> RequestQueue::AddFindRequest(const std::string& rawQuery, DocumentStatus status) {
+	return AddFindRequest(rawQuery, [status](int document_id, DocumentStatus documentStatus, int rating){
 		return documentStatus == status;
 	});
 }
 
-std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query) {
-	return AddFindRequest(raw_query, DocumentStatus::ACTUAL);
+std::vector<Document> RequestQueue::AddFindRequest(const std::string& rawQuery) {
+	return AddFindRequest(rawQuery, DocumentStatus::ACTUAL);
 }
 
 int RequestQueue::GetNoResultRequests() const {

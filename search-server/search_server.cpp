@@ -4,56 +4,52 @@
 
 SearchServer::SearchServer(){}
 
-SearchServer::SearchServer(const std::string& stopWords):SearchServer(SplitIntoWords(stopWords)){}
+SearchServer::SearchServer(const std::string& stopWordsContainer):SearchServer(SplitIntoWords(stopWordsContainer)){}
 
-void SearchServer::AddDocument(int document_id, const std::string& document, DocumentStatus status, const std::vector<int>& docRating){
-	checkDocumentId(document_id);
-	const std::vector<std::string> words = SplitIntoWordsNoStop(document, stop_words);
-	documentsIds.insert(document_id);
+void SearchServer::AddDocument(int documentId, const std::string& document, DocumentStatus status, const std::vector<int>& docRating){
+	CheckDocumentId(documentId);
+	const std::vector<std::string> words = SplitIntoWordsNoStop(document, stopWords);
+	documentsIds.insert(documentId);
 	int size = words.size();
 	double tf = 1.0 / size;
 
 	std::set<std::string> uniqueWords;
 	for(const std::string& word: words){
-		tf += documents[word][document_id];
-		documents[word][document_id] = tf;
-		wordFreq[document_id][word] = tf;
+		tf += documents[word][documentId];
+		documents[word][documentId] = tf;
+		wordFreq[documentId][word] = tf;
 		uniqueWords.insert(word);
 	}
 
-	int stringHash = 0;
-	for(const std::string uWord: uniqueWords){
-		stringHash += (std::hash<std::string>{}(uWord) % 65537);
-	}
-	documentsHash[document_id] = stringHash;
-	documentsRating[document_id] = ComputeAverageRating(docRating);
-	documentStatus[document_id] = status;
+	documentsHash[uniqueWords].insert(documentId);
+	documentsRatingStatus[documentId].rating = ComputeAverageRating(docRating);
+	documentsRatingStatus[documentId].status = status;
 }
 
-std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_query, DocumentStatus status)const{
-	return FindTopDocuments(raw_query, [status](int document_id, DocumentStatus documentStatus, int rating){
+std::vector<Document> SearchServer::FindTopDocuments(const std::string& rawQuery, DocumentStatus status)const{
+	return FindTopDocuments(rawQuery, [status](int documentId, DocumentStatus documentStatus, int rating){
 		return documentStatus == status;
 	});
 }
 
-std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_query)const{
-	return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
+std::vector<Document> SearchServer::FindTopDocuments(const std::string& rawQuery)const{
+	return FindTopDocuments(rawQuery, DocumentStatus::ACTUAL);
 }
 
-std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument(const std::string& raw_query, int document_id)const{
-	Query query_words = ParseQuery(raw_query);
+std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument(const std::string& rawQuery, int documentId)const{
+	Query queryWords = ParseQuery(rawQuery);
 	std::vector<std::string> findWords;
-	DocumentStatus status = documentStatus.at(document_id);
+	DocumentStatus status = documentsRatingStatus.at(documentId).status;
 	std::tuple<std::vector<std::string>, DocumentStatus> result;
-	for(const std::string& word: query_words.minus_words){
-		if(documents.count(word) && documents.at(word).count(document_id)){
+	for(const std::string& word: queryWords.minusWords){
+		if(documents.count(word) && documents.at(word).count(documentId)){
 			result = {findWords, status};
 			return result;
 		}
 	}
 
-	for(const std::string& word: query_words.plus_words){
-		if(documents.count(word) && documents.at(word).count(document_id)){
+	for(const std::string& word: queryWords.plusWords){
+		if(documents.count(word) && documents.at(word).count(documentId)){
 			findWords.push_back(word);
 		}
 	}
@@ -68,30 +64,30 @@ unsigned SearchServer::GetDocumentCount()const{
 
 std::set<int>::const_iterator SearchServer::begin()const{
 	return documentsIds.begin();
-};
+}
 
 std::set<int>::const_iterator SearchServer::end()const{
 	return documentsIds.end();
-};
-const std::map<std::string, double>& SearchServer::GetWordFrequencies(int document_id)const{
+}
+const std::map<std::string, double>& SearchServer::GetWordFrequencies(int documentId)const{
 	const static std::map<std::string, double> wordFreqEmpty;
-	if(documentsIds.count(document_id) == 0){
+	if(documentsIds.count(documentId) == 0){
 		return wordFreqEmpty;
 	}
-	return wordFreq.at(document_id);
+	return wordFreq.at(documentId);
 
 };
-void SearchServer::RemoveDocument(int document_id){
-	if(documentsIds.count(document_id) > 0){
-		for(const auto& [word, tf]: wordFreq.at(document_id)){
-			if(documents.at(word).count(document_id) > 0){
-				documents.at(word).erase(document_id);
+void SearchServer::RemoveDocument(int documentId){
+	if(documentsIds.count(documentId) > 0){
+		for(const auto& [word, tf]: wordFreq.at(documentId)){
+			if(documents.at(word).count(documentId) > 0){
+				documents.at(word).erase(documentId);
 			}
 		}
-		documentsIds.erase(document_id);
+		documentsIds.erase(documentId);
 	}
 }
-bool SearchServer::checkWord(const std::string& word)const{
+bool SearchServer::CheckWord(const std::string& word)const{
 	for(const char ch: word){
 		int code = int(ch);
 		if(code >= 0 && code < 32){
@@ -108,23 +104,23 @@ int SearchServer::ComputeAverageRating(const std::vector<int>& ratings){
 	return std::accumulate(ratings.begin(), ratings.end(), 0) / static_cast<int>(ratings.size());
 }
 
-void SearchServer::checkDocumentId(int document_id)const{
-	if(documentStatus.count(document_id)){
+void SearchServer::CheckDocumentId(int documentId)const{
+	if(documentsRatingStatus.count(documentId)){
 		throw std::invalid_argument("document id alredy exist");
 	}
 
-	if(document_id < 0){
+	if(documentId < 0){
 		throw std::invalid_argument("document id less that 0");
 	}
 }
 
-std::vector<std::string> SearchServer::SplitIntoWordsNoStop(const std::string& text, const std::set<std::string>& stop_words)const{
+std::vector<std::string> SearchServer::SplitIntoWordsNoStop(const std::string& text, const std::set<std::string>& stopWords)const{
 	std::vector<std::string> words;
 	for (const std::string& word : SplitIntoWords(text)){
-		if(!checkWord(word)){
+		if(!CheckWord(word)){
 			throw std::invalid_argument("the word "+word+" contains wrong symbol");
 		}
-		if (stop_words.count(word) == 0){
+		if (stopWords.count(word) == 0){
 			words.push_back(word);
 		}
 	}
@@ -132,18 +128,18 @@ std::vector<std::string> SearchServer::SplitIntoWordsNoStop(const std::string& t
 }
 
 bool SearchServer::IsStopWord(const std::string& word)const{
-	return stop_words.count(word);
+	return stopWords.count(word);
 }
 
 SearchServer::Query SearchServer::ParseQuery(const std::string& text)const{
 	Query query;
 	for (const std::string& word : SplitIntoWords(text)){
 		const QueryWord queryWord = ParseQueryWord(word);
-		if(!queryWord.is_stop){
-			if(queryWord.is_minus){
-				query.minus_words.insert(queryWord.data);
+		if(!queryWord.isStop){
+			if(queryWord.isMinus){
+				query.minusWords.insert(queryWord.data);
 			}else{
-				query.plus_words.insert(queryWord.data);
+				query.plusWords.insert(queryWord.data);
 			}
 		}
 	}
@@ -156,19 +152,19 @@ SearchServer::QueryWord SearchServer::ParseQueryWord(std::string word)const{
 		throw std::invalid_argument("query word contains extra -");
 	}
 
-	if(!checkWord(word)){
+	if(!CheckWord(word)){
 		throw std::invalid_argument("query word contains a wrong character");
 	}
 
-	bool is_minus = false;
+	bool isMinus = false;
 	if(word[0] == '-'){
-		is_minus = true;
+		isMinus = true;
 		word = word.substr(1);
 	}
 
 	return {
 		word,
-		is_minus,
+		isMinus,
 		IsStopWord(word)
 	};
 }

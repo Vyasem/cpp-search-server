@@ -17,12 +17,12 @@ public:
     ~LogDuration() {
         using namespace std::chrono;
         using namespace std::literals;
-        const auto end_time = Clock::now();
-        const auto dur = end_time - start_time_;
-        os_ << id_ << ": "s << duration_cast<milliseconds>(dur).count() << " ms"s << std::endl;
+        const auto endTime = Clock::now();
+        const auto dur = endTime - startTime_;
+        os_ << id_ << ": "s << duration_cast<nanoseconds>(dur).count() << " ms"s << std::endl;
     }
 private:
     const std::string id_;
     std::ostream& os_;
-    const Clock::time_point start_time_ = Clock::now();
+    const Clock::time_point startTime_ = Clock::now();
 };

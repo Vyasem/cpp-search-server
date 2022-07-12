@@ -18,8 +18,6 @@ const double EPSILON = 1e-6;
 
 class SearchServer{
 public:
-	inline static constexpr int INVALID_DOCUMENT_ID = -1;
-	//Контейнер который хранит хэши уникальных слов документа
 	std::map<int, int> documentsHash;
 	SearchServer();
 	SearchServer(const std::string& stopWords);
@@ -31,13 +29,14 @@ public:
 	std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentStatus status)const;
 	std::vector<Document> FindTopDocuments(const std::string& raw_query)const;
 	std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id)const;
-	std::vector<int>::const_iterator begin()const;
-	std::vector<int>::const_iterator end()const;
+	std::set<int>::const_iterator begin()const;
+	std::set<int>::const_iterator end()const;
 	unsigned GetDocumentCount()const;
 	const std::map<std::string, double>& GetWordFrequencies(int document_id)const;
 	void RemoveDocument(int document_id);
 private:
-	std::vector<int> documentsIds;
+	std::set<int> documentsIds;
+	std::map<int, std::map<std::string, double>> wordFreq;
 	std::map<std::string, std::map<int, double>> documents;
 	std::set<std::string> stop_words;
 	std::map<int, int> documentsRating;

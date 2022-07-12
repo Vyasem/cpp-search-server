@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include "headers/string_processing.h"
 #include "headers/search_server.h"
 
@@ -8,7 +9,7 @@ SearchServer::SearchServer(const std::string& stopWords):SearchServer(SplitIntoW
 void SearchServer::AddDocument(int document_id, const std::string& document, DocumentStatus status, const std::vector<int>& docRating){
 	checkDocumentId(document_id);
 	const std::vector<std::string> words = SplitIntoWordsNoStop(document, stop_words);
-	documentsIds.push_back(document_id);
+	documentsIds.insert(document_id);
 	int size = words.size();
 	double tf = 1.0 / size;
 
@@ -16,6 +17,7 @@ void SearchServer::AddDocument(int document_id, const std::string& document, Doc
 	for(const std::string& word: words){
 		tf += documents[word][document_id];
 		documents[word][document_id] = tf;
+		wordFreq[document_id][word] = tf;
 		uniqueWords.insert(word);
 	}
 
@@ -64,33 +66,29 @@ unsigned SearchServer::GetDocumentCount()const{
 	return documentsIds.size();
 }
 
-std::vector<int>::const_iterator SearchServer::begin()const{
+std::set<int>::const_iterator SearchServer::begin()const{
 	return documentsIds.begin();
 };
 
-std::vector<int>::const_iterator SearchServer::end()const{
+std::set<int>::const_iterator SearchServer::end()const{
 	return documentsIds.end();
 };
 const std::map<std::string, double>& SearchServer::GetWordFrequencies(int document_id)const{
-	static std::map<std::string, double> wordFreq;
-	for(const auto& [word, document]: documents){
-		if(document.count(document_id)){
-			wordFreq[word] = document.at(document_id);
-		}
+	const static std::map<std::string, double> wordFreqEmpty;
+	if(documentsIds.count(document_id) == 0){
+		return wordFreqEmpty;
 	}
-	return wordFreq;
+	return wordFreq.at(document_id);
+
 };
 void SearchServer::RemoveDocument(int document_id){
-	for(auto& [word, document]: documents){
-		if(document.count(document_id)){
-			document.erase(document_id);
+	if(documentsIds.count(document_id) > 0){
+		for(const auto& [word, tf]: wordFreq.at(document_id)){
+			if(documents.at(word).count(document_id) > 0){
+				documents.at(word).erase(document_id);
+			}
 		}
-	}
-	for(auto it = begin(); it != end(); ++it){
-		if(*it == document_id){
-			documentsIds.erase(it);
-			break;
-		}
+		documentsIds.erase(document_id);
 	}
 }
 bool SearchServer::checkWord(const std::string& word)const{

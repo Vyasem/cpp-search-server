@@ -46,9 +46,8 @@ void FindTopDocuments(const SearchServer& search_server, const std::string& raw_
 void MatchDocuments(const SearchServer& search_server, const std::string& query){
 	try {
 		std::cout << "Матчинг документов по запросу: " << query << std::endl;
-		const int document_count = search_server.GetDocumentCount();
-		for (int index = 0; index < document_count; ++index){
-			const int document_id = *(search_server.begin() + index);
+		for (auto it = search_server.begin(); it != search_server.end(); ++it){
+			const int document_id = *it;
 			const auto [words, status] = search_server.MatchDocument(query, document_id);
 			PrintMatchDocumentResult(document_id, words, status);
 		}
@@ -89,6 +88,7 @@ int main(){
 	std::cout << "Before duplicates removed: "s << search_server.GetDocumentCount() << std::endl;
 	RemoveDuplicates(search_server);
 	std::cout << "After duplicates removed: "s << search_server.GetDocumentCount() << std::endl;
+
 	return 0;
 }
 

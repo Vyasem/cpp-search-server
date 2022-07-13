@@ -18,11 +18,13 @@ const double EPSILON = 1e-6;
 
 class SearchServer{
 public:
-	std::map<std::set<std::string>, std::set<int>> documentsHash;
 	SearchServer();
+
 	SearchServer(const std::string& stopWordsContainer);
+
 	template<typename Container>
 	SearchServer(const Container& stopWordsContainer);
+
 	void AddDocument(int documentId, const std::string& document, DocumentStatus status, const std::vector<int>& docRating);
 
 	template <typename Predicat>

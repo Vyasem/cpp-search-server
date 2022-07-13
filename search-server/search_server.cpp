@@ -13,16 +13,12 @@ void SearchServer::AddDocument(int documentId, const std::string& document, Docu
 	int size = words.size();
 	double tf = 1.0 / size;
 
-	std::set<std::string> uniqueWords;
 	for(const std::string& word: words){
 		tf += documents[word][documentId];
 		documents[word][documentId] = tf;
 		wordFreq[documentId][word] = tf;
-		uniqueWords.insert(word);
 	}
-
-	documentsHash[uniqueWords].insert(documentId);
-	documentsRatingStatus[documentId].rating = ComputeAverageRating(docRating);
+ 	documentsRatingStatus[documentId].rating = ComputeAverageRating(docRating);
 	documentsRatingStatus[documentId].status = status;
 }
 

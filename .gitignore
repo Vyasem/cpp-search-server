@@ -34,3 +34,7 @@
 #Excute test
 test_example_functions.h
 test_example_functions.cpp
+test.h
+test.cpp
+
+.vs/

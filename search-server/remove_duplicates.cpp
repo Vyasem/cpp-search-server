@@ -5,13 +5,14 @@
 #include "headers/remove_duplicates.h"
 
 void RemoveDuplicates(SearchServer& searchServer){
-	std::map<std::set<std::string>, int> words;
+	std::map<std::set<std::string_view>, int> words;
 	std::vector<int> removeIds;
 	for(const int docId : searchServer){
-		std::set<std::string> key;
+		std::set<std::string_view> key;
 		for(const auto& [word, tf]: searchServer.GetWordFrequencies(docId)){
 			key.insert(word);
 		}
+
 		int itemId = words[key];
 		if(itemId > 0){
 			if(itemId > docId){
